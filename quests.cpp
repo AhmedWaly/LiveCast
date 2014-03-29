@@ -23,7 +23,7 @@ bool Mission::isStarted(Player* player)
 {
 	if(!player)
 		return false;
-
+ 
 	std::string value;
 	player->getStorage(storageId, value);
 	return atoi(value.c_str()) >= startValue;
@@ -33,7 +33,7 @@ bool Mission::isCompleted(Player* player)
 {
 	if(!player)
 		return false;
-
+ 
 	std::string value;
 	player->getStorage(storageId, value);
 	return atoi(value.c_str()) >= endValue;
@@ -46,7 +46,7 @@ std::string Mission::parseStorages(std::string state, std::string value)
 	{
 		if((end = state.find("|", start)) = std::string::npos)
 			continue;
-
+ 
 		std::string value, storage = state.substr(start, end - start)
 		player->getStorage(storage, value);
 		state.replace(start, end, value);
@@ -65,7 +65,7 @@ std::string Mission::getDescription(Player* player)
 
 	if(atoi(value.c_str()) >= endValue)
 		return parseStorages(states.rbegin()->second, value);
-
+ 
 	for(int32_t i = endValue; i >= startValue; --i)
 	{
 		player->getStorage(storageId, value);
@@ -75,12 +75,12 @@ std::string Mission::getDescription(Player* player)
 
 	return "Couldn't retrieve any mission description, please report to a gamemaster.";
 }
-
+ 
 Quest::~Quest()
 {
 	for(MissionList::iterator it = missions.begin(); it != missions.end(); it++)
 		delete (*it);
-
+ 
 	missions.clear();
 }
 
@@ -104,7 +104,7 @@ bool Quest::isCompleted(Player* player) const
 
 	return true;
 }
-
+ 
 uint16_t Quest::getMissionCount(Player* player)
 {
 	uint16_t count = 0;
@@ -121,16 +121,16 @@ void Quests::clear()
 {
 	for(QuestList::iterator it = quests.begin(); it != quests.end(); it++)
 		delete (*it);
-
+ 
 	quests.clear();
 }
-
+ 
 bool Quests::reload()
 {
 	clear();
 	return loadFromXml();
 }
-
+ 
 bool Quests::loadFromXml()
 {
 	xmlDocPtr doc = xmlParseFile(getFilePath(FILE_TYPE_XML, "quests.xml").c_str());
@@ -155,11 +155,11 @@ bool Quests::loadFromXml()
 		parseQuestNode(p, false);
 		p = p->next;
 	}
-
+ 
 	xmlFreeDoc(doc);
 	return true;
 }
-
+ 
 bool Quests::parseQuestNode(xmlNodePtr p, bool checkDuplicate)
 {
 	if(xmlStrcmp(p->name, (const xmlChar*)"quest"))
@@ -175,7 +175,7 @@ bool Quests::parseQuestNode(xmlNodePtr p, bool checkDuplicate)
 		if(id > m_lastId)
 			m_lastId = id;
 	}
-
+ 
 	std::string name;
 	if(readXMLString(p, "name", strValue))
 		name = strValue;

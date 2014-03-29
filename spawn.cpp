@@ -278,7 +278,28 @@ bool Spawn::findPlayer(const Position& pos)
 
 bool Spawn::spawnMonster(uint32_t spawnId, MonsterType* mType, const Position& pos, Direction dir, bool startup /*= false*/)
 {
-	Monster* monster = Monster::createMonster(mType);
+	int32_t nHealth = mType->health,nMaxHealth = mType->healthMax, nExp = mType->experience, nDef = mType->defense, nArm = mType->armor;
+		int32_t monsterLevel = random_range(mType->minLevel, mType->maxLevel);
+	if (monsterLevel != 0)
+	{
+    monsterLevel = monsterLevel;
+} else {
+    monsterLevel = random_range(5,15);
+}
+	mType->health = (uint64_t)std::ceil(mType->health * monsterLevel / 8);
+	mType->healthMax = (uint64_t)std::ceil(mType->healthMax * monsterLevel / 8);
+	mType->experience = (uint64_t)std::ceil(mType->experience * monsterLevel / 8);
+	mType->defense = (uint64_t)std::ceil(mType->defense * monsterLevel / 8);
+	mType->armor = (uint64_t)std::ceil(mType->armor * monsterLevel / 8);
+    Monster* monster = Monster::createMonster(mType);
+    monster->doMonsterSetCombatValues(monsterLevel);
+    monster->doMonsterSetLevel(monsterLevel);
+ 
+mType->health = nHealth;
+mType->healthMax = nMaxHealth;
+mType->experience = nExp;
+mType->defense = nDef;
+mType->armor = nArm;
 	if(!monster)
 		return false;
 

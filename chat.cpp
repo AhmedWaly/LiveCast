@@ -150,7 +150,7 @@ bool ChatChannel::removeUser(Player* player)
 	return true;
 }
 
-bool ChatChannel::talk(Player* player, SpeakClasses type, const std::string& text, uint32_t _time/* = 0*/)
+bool ChatChannel::talk(Player* player, SpeakClasses type, const std::string& text, uint32_t _time, ProtocolGame* pg) //CA
 {
 	UsersMap::iterator it = m_users.find(player->getID());
 	if(it == m_users.end())
@@ -163,7 +163,7 @@ bool ChatChannel::talk(Player* player, SpeakClasses type, const std::string& tex
 	}
 
 	for(it = m_users.begin(); it != m_users.end(); ++it)
-		it->second->sendToChannel(player, type, text, m_id, _time);
+		it->second->sendToChannel(player, type, text, m_id, _time, pg);
 
 	if(hasFlag(CHANNELFLAG_LOGGED) && m_file->is_open())
 		*m_file << "[" << formatDate() << "] " << player->getName() << ": " << text << std::endl;
@@ -496,7 +496,7 @@ void Chat::removeUserFromAllChannels(Player* player)
 	}
 }
 
-bool Chat::talkToChannel(Player* player, SpeakClasses type, const std::string& text, uint16_t channelId)
+bool Chat::talkToChannel(Player* player, SpeakClasses type, const std::string& text, uint16_t channelId, ProtocolGame* pg) //CA
 {
 	if(text.empty())
 		return false;
@@ -547,7 +547,7 @@ bool Chat::talkToChannel(Player* player, SpeakClasses type, const std::string& t
 			}
 		}
 
-		return channel->talk(player, type, text);
+		return channel->talk(player, type, text, 0, pg); //CA
 	}
 
 	if(!player->getGuildId())

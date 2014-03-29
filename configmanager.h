@@ -286,12 +286,14 @@ class ConfigManager
 			ADMIN_LOGS,
 			ADMIN_LOCALHOST_ONLY,
 			ADMIN_REQUIRE_LOGIN,
+			MAX_LEVEL,
 			ADDONS_PREMIUM,
 #ifdef __WAR_SYSTEM__
 			OPTIONAL_WAR_ATTACK_ALLY,
 #endif
 			BIND_ONLY_GLOBAL_ADDRESS,
 			UNIFIED_SPELLS,
+			ENABLE_CAST, //CA
 			LAST_BOOL_CONFIG /* this must be the last one */
 		};
 

@@ -2241,15 +2241,30 @@ bool Game::playerBroadcastMessage(Player* player, SpeakClasses type, const std::
 	return true;
 }
 
-bool Game::playerCreatePrivateChannel(uint32_t playerId)
+bool Game::playerCreatePrivateChannel(uint32_t playerId, ProtocolGame* pg) //CA
 {
 	Player* player = getPlayerByID(playerId);
 	if(!player || player->isRemoved() || !player->isPremium())
 		return false;
 
-	ChatChannel* channel = g_chat.createChannel(player, 0xFFFF);
-	if(!channel || !channel->addUser(player))
+	ChatChannel* channel = NULL;
+	if(pg != NULL && pg->getIsCast()) { //CA
+		channel = g_chat.getPrivateChannel(player);
+		if(channel) {
+			pg->publicSendCreatePrivateChannel(channel->getId(), channel->getName());
+			return true;
+		} else
+			pg->publicSendMessage(player, SPEAK_PRIVATE, "The cast owner disabled communication.");
+
 		return false;
+	} else {
+		channel = g_chat.createChannel(player, 0xFFFF);
+		if(!channel || !channel->addUser(player))
+			return false;
+	}
+
+	for(AutoList<ProtocolGame>::const_iterator it = Player::cSpectators.begin(); it != Player::cSpectators.end(); ++it) if(it->second->getPlayer() == player)
+		it->second->publicSendMessage(player, SPEAK_PRIVATE, "The cast owner turned communication on.");
 
 	player->sendCreatePrivateChannel(channel->getId(), channel->getName());
 	return true;
@@ -2291,13 +2306,17 @@ bool Game::playerChannelExclude(uint32_t playerId, const std::string& name)
 	return true;
 }
 
-bool Game::playerRequestChannels(uint32_t playerId)
+bool Game::playerRequestChannels(uint32_t playerId, ProtocolGame* pg)  //CA
 {
 	Player* player = getPlayerByID(playerId);
 	if(!player || player->isRemoved())
 		return false;
 
-	player->sendChannelsDialog();
+	if(pg != NULL && pg->getIsCast())
+		pg->publicSendChannelsDialog();
+	else
+		player->sendChannelsDialog();
+
 	return true;
 }
 
@@ -2329,6 +2348,12 @@ bool Game::playerCloseChannel(uint32_t playerId, uint16_t channelId)
 	Player* player = getPlayerByID(playerId);
 	if(!player || player->isRemoved())
 		return false;
+
+	ChatChannel* channel = g_chat.getPrivateChannel(player); //CA
+	if(channel && channel->getId() == channelId) {
+		for(AutoList<ProtocolGame>::const_iterator it = Player::cSpectators.begin(); it != Player::cSpectators.end(); ++it) if(it->second->getPlayer() == player)
+			it->second->publicSendMessage(player, SPEAK_PRIVATE, "The cast owner turned communication off.");
+	}
 
 	g_chat.removeUserFromChannel(player, channelId);
 	return true;
@@ -3716,11 +3741,28 @@ bool Game::playerChangeOutfit(uint32_t playerId, Outfit_t outfit)
 	return true;
 }
 
-bool Game::playerSay(uint32_t playerId, uint16_t channelId, SpeakClasses type, const std::string& receiver, const std::string& text)
+bool Game::playerSay(uint32_t playerId, uint16_t channelId, SpeakClasses type, const std::string& receiver, const std::string& text, ProtocolGame* pg) //CA
 {
 	Player* player = getPlayerByID(playerId);
 	if(!player || player->isRemoved())
 		return false;
+
+	if (pg != NULL && pg->getIsCast() && !player->isAccountManager()) {  //CA
+		if(g_talkActions->onPlayerSay(player, type == SPEAK_SAY ? (unsigned)CHANNEL_DEFAULT : channelId, text, false, pg))
+			return true;
+
+		PlayerCast pc = player->getCast();
+		for(std::list<CastBan>::iterator it = pc.muted.begin(); it != pc.muted.end(); ++it)
+			if(it->ip == pg->getIP()) {
+				pg->publicSendMessage(player, SPEAK_PRIVATE, "You are muted on this cast.");
+				return false;
+			}
+
+		if(playerTalkToChannel(player, type, text, channelId, pg))
+			return true;
+		else
+			return false;
+	}
 
 	uint32_t muted = 0;
 	bool mute = player->isMuted(channelId, type, muted);
@@ -3884,7 +3926,7 @@ bool Game::playerSpeakTo(Player* player, SpeakClasses type, const std::string& r
 	return true;
 }
 
-bool Game::playerTalkToChannel(Player* player, SpeakClasses type, const std::string& text, uint16_t channelId)
+bool Game::playerTalkToChannel(Player* player, SpeakClasses type, const std::string& text, uint16_t channelId, ProtocolGame* pg) //CA
 {
 	switch(type)
 	{
@@ -3892,6 +3934,9 @@ bool Game::playerTalkToChannel(Player* player, SpeakClasses type, const std::str
 		{
 			if(channelId == CHANNEL_HELP && player->hasFlag(PlayerFlag_TalkOrangeHelpChannel))
 				type = SPEAK_CHANNEL_O;
+				
+			if(g_chat.getPrivateChannel(player) != NULL && channelId == g_chat.getPrivateChannel(player)->getId() && (pg == NULL || pg != NULL && !pg->getIsCast())) //CA
+				type = SPEAK_CHANNEL_O; //CA
 			break;
 		}
 
@@ -3920,7 +3965,7 @@ bool Game::playerTalkToChannel(Player* player, SpeakClasses type, const std::str
 			break;
 	}
 
-	return g_chat.talkToChannel(player, type, text, channelId);
+	return g_chat.talkToChannel(player, type, text, channelId, pg); //CA
 }
 
 bool Game::playerSpeakToNpc(Player* player, const std::string& text)

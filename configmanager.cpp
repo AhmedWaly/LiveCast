@@ -269,6 +269,7 @@ bool ConfigManager::load()
 	m_confBool[DEATH_LIST] = getGlobalBool("deathListEnabled", true);
 	m_confNumber[DEATH_ASSISTS] = getGlobalNumber("deathAssistCount", 1);
 	m_confNumber[RED_DAILY_LIMIT] = getGlobalNumber("dailyFragsToRedSkull", 3);
+	m_confNumber[MAX_LEVEL] = getGlobalNumber("maxMonsterLevel", 10);
 	m_confNumber[RED_WEEKLY_LIMIT] = getGlobalNumber("weeklyFragsToRedSkull", 5);
 	m_confNumber[RED_MONTHLY_LIMIT] = getGlobalNumber("monthlyFragsToRedSkull", 10);
 	m_confNumber[BLACK_DAILY_LIMIT] = getGlobalNumber("dailyFragsToBlackSkull", m_confNumber[RED_DAILY_LIMIT]);
@@ -321,6 +322,7 @@ bool ConfigManager::load()
 	m_confNumber[VIPLIST_DEFAULT_PREMIUM_LIMIT] = getGlobalNumber("vipListDefaultPremiumLimit", 100);
 	m_confNumber[STAMINA_DESTROY_LOOT] = getGlobalNumber("staminaLootLimit", 14 * 60);
 	m_confNumber[FIST_BASE_ATTACK] = getGlobalNumber("fistBaseAttack", 7);
+	m_confBool[ENABLE_CAST]	= getGlobalBool("enableCast", false); //CA
 
 	m_loaded = true;
 	return true;

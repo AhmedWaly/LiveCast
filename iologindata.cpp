@@ -821,6 +821,9 @@ bool IOLoginData::savePlayer(Player* player, bool preSave/* = true*/, bool shall
 	query << "`sex` = " << player->sex << ", ";
 	query << "`balance` = " << player->balance << ", ";
 	query << "`stamina` = " << player->getStamina() << ", ";
+	query << "`cast` = " << (player->getCastingState() ? 1 : 0) << ", "; //CA
+	query << "`castViewers` = " << player->getCastViewerCount() << ", ";
+	query << "`castDescription` = " << db->escapeString(player->getCastDescription()) << ", ";
 
 	Skulls_t skull = SKULL_RED;
 	if(g_config.getBool(ConfigManager::USE_BLACK_SKULL))

@@ -71,9 +71,10 @@ Monster::Monster(MonsterType* _mType):
 	setSkull(mType->skull);
 	setShield(mType->partyShield);
 	setEmblem(mType->guildEmblem);
-
 	hideName = mType->hideName, hideHealth = mType->hideHealth;
-
+	minLevel = mType->minLevel;
+	maxLevel = mType->maxLevel;
+    randomDamage = monsterLevel = random_range(minLevel,maxLevel);
 	minCombatValue = 0;
 	maxCombatValue = 0;
 
@@ -1243,8 +1244,8 @@ bool Monster::getCombatValues(int32_t& min, int32_t& max)
 	else //attack
 		multiplier = g_config.getDouble(ConfigManager::RATE_MONSTER_ATTACK);
 
-	min = (int32_t)(minCombatValue * multiplier);
-	max = (int32_t)(maxCombatValue * multiplier);
+	min = (int32_t)(minCombatValue * multiplier + (minCombatValue * randomDamage / 10));
+    max = (int32_t)(maxCombatValue * multiplier + (maxCombatValue * randomDamage / 10));
 	return true;
 }
 
@@ -1306,7 +1307,7 @@ void Monster::updateLookDirection()
 void Monster::dropLoot(Container* corpse)
 {
 	if(corpse && lootDrop == LOOT_DROP_FULL)
-		mType->dropLoot(corpse);
+		mType->dropLoot(corpse, randomDamage);
 }
 
 bool Monster::isImmune(CombatType_t type) const

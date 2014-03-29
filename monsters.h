@@ -86,9 +86,9 @@ class MonsterType
 
 		void reset();
 
-		void dropLoot(Container* corpse);
-		ItemList createLoot(const LootBlock& lootBlock);
-		bool createChildLoot(Container* parent, const LootBlock& lootBlock);
+		void dropLoot(Container* corpse, int32_t randomDamage);
+		ItemList createLoot(const LootBlock& lootBlock, int32_t randomDamage);
+		bool createChildLoot(Container* parent, const LootBlock& lootBlock, int32_t randomDamage);
 
 		bool isSummonable, isIllusionable, isConvinceable, isAttackable, isHostile, isLureable,
 			isWalkable, canPushItems, canPushCreatures, pushable, hideName, hideHealth;
@@ -102,7 +102,7 @@ class MonsterType
 
 		int32_t defense, armor, health, healthMax, baseSpeed, lookCorpse, corpseUnique, corpseAction,
 			maxSummons, targetDistance, runAwayHealth, conditionImmunities, damageImmunities,
-			lightLevel, lightColor, changeTargetSpeed, changeTargetChance;
+			lightLevel, lightColor, changeTargetSpeed, changeTargetChance, minLevel, maxLevel, monsterLevel;
 		uint32_t yellChance, yellSpeedTicks, staticAttackChance, manaCost;
 		uint64_t experience;
 

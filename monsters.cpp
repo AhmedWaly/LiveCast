@@ -45,7 +45,8 @@ void MonsterType::reset()
 	outfit.lookHead = outfit.lookBody = outfit.lookLegs = outfit.lookFeet = outfit.lookType = outfit.lookTypeEx = outfit.lookAddons = 0;
 	runAwayHealth = manaCost = lightLevel = lightColor = yellSpeedTicks = yellChance = changeTargetSpeed = changeTargetChance = 0;
 	experience = defense = armor = lookCorpse = corpseUnique = corpseAction = conditionImmunities = damageImmunities = 0;
-
+    minLevel = maxLevel = 0;
+    monsterLevel = 5;
 	maxSummons = -1;
 	targetDistance = 1;
 	staticAttackChance = 95;
@@ -91,12 +92,12 @@ uint16_t Monsters::getLootRandom()
 	return (uint16_t)std::ceil((double)random_range(0, MAX_LOOTCHANCE) / g_config.getDouble(ConfigManager::RATE_LOOT));
 }
 
-void MonsterType::dropLoot(Container* corpse)
+void MonsterType::dropLoot(Container* corpse, int32_t randomDamage)
 {
 	ItemList items;
 	for(LootItems::const_iterator it = lootItems.begin(); it != lootItems.end() && !corpse->full(); ++it)
 	{
-		items = createLoot(*it);
+		items = createLoot(*it,randomDamage);
 		if(items.empty())
 			continue;
 
@@ -105,7 +106,7 @@ void MonsterType::dropLoot(Container* corpse)
 			Item* tmpItem = *iit;
 			if(Container* container = tmpItem->getContainer())
 			{
-				if(createChildLoot(container, *it))
+				if(createChildLoot(container, *it,randomDamage))
 					corpse->__internalAddThing(tmpItem);
 				else
 					delete container;
@@ -139,9 +140,9 @@ void MonsterType::dropLoot(Container* corpse)
 		owner->sendTextMessage((MessageClasses)g_config.getNumber(ConfigManager::LOOT_MESSAGE_TYPE), ss.str());
 }
 
-ItemList MonsterType::createLoot(const LootBlock& lootBlock)
+ItemList MonsterType::createLoot(const LootBlock& lootBlock, int32_t randomDamage)
 {
-	uint16_t item = lootBlock.ids[0], random = Monsters::getLootRandom(), count = 0;
+	uint16_t item = lootBlock.ids[0], random = Monsters::getLootRandom() + (Monsters::getLootRandom() * randomDamage / 10), count = 0;
 	if(lootBlock.ids.size() > 1)
 		item = lootBlock.ids[random_range((size_t)0, lootBlock.ids.size() - 1)];
 
@@ -178,7 +179,7 @@ ItemList MonsterType::createLoot(const LootBlock& lootBlock)
 	return items;
 }
 
-bool MonsterType::createChildLoot(Container* parent, const LootBlock& lootBlock)
+bool MonsterType::createChildLoot(Container* parent, const LootBlock& lootBlock, int32_t randomDamage)
 {
 	LootItems::const_iterator it = lootBlock.childLoot.begin();
 	if(it == lootBlock.childLoot.end())
@@ -187,7 +188,7 @@ bool MonsterType::createChildLoot(Container* parent, const LootBlock& lootBlock)
 	ItemList items;
 	for(; it != lootBlock.childLoot.end() && !parent->full(); ++it)
 	{
-		items = createLoot(*it);
+		items = createLoot(*it, randomDamage);
 		if(items.empty())
 			continue;
 
@@ -196,7 +197,7 @@ bool MonsterType::createChildLoot(Container* parent, const LootBlock& lootBlock)
 			Item* tmpItem = *iit;
 			if(Container* container = tmpItem->getContainer())
 			{
-				if(createChildLoot(container, *it))
+				if(createChildLoot(container, *it,randomDamage))
 					parent->__internalAddThing(tmpItem);
 				else
 					delete container;
@@ -958,6 +959,12 @@ bool Monsters::loadMonster(const std::string& file, const std::string& monsterNa
 
 	if(readXMLInteger(root, "experience", intValue))
 		mType->experience = intValue;
+		
+	if(readXMLInteger(root, "minLevel", intValue))
+		mType->minLevel = intValue;
+		
+	if(readXMLInteger(root, "maxLevel", intValue))
+		mType->maxLevel = intValue;
 
 	if(readXMLInteger(root, "speed", intValue))
 		mType->baseSpeed = intValue;

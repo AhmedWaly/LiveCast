@@ -24,20 +24,20 @@
 
 #include "npc.h"
 #include "tools.h"
-
+ 
 #include "luascript.h"
 #include "position.h"
 
 #include "spells.h"
 #include "vocation.h"
-
+ 
 #include "configmanager.h"
 #include "game.h"
 
 extern ConfigManager g_config;
 extern Game g_game;
 extern Spells* g_spells;
-
+ 
 AutoList<Npc> Npc::autoList;
 #ifdef __ENABLE_SERVER_DIAGNOSTIC__
 uint32_t Npc::npcCount = 0;
@@ -60,14 +60,14 @@ Npc* Npc::createNpc(const std::string& name)
 	Npc* npc = new Npc(name);
 	if(!npc)
 		return NULL;
-
+ 
 	if(npc->load())
 		return npc;
 
 	delete npc;
 	return NULL;
 }
-
+ 
 Npc::Npc(const std::string& _name):
 	Creature()
 {
@@ -81,7 +81,7 @@ Npc::Npc(const std::string& _name):
 		if(fileExists(tmp.c_str()))
 			m_filename = tmp;
 	}
-
+ 
 	m_npcEventHandler = NULL;
 	loaded = false;
 	reset();
@@ -111,7 +111,7 @@ bool Npc::load()
 	loaded = loadFromXml(m_filename);
 	return isLoaded();
 }
-
+ 
 void Npc::reset()
 {
 	loaded = false;
@@ -135,7 +135,7 @@ void Npc::reset()
 
 	for(StateList::iterator it = stateList.begin(); it != stateList.end(); ++it)
 		delete *it;
-
+ 
 	responseList.clear();
 	stateList.clear();
 	queueList.clear();
@@ -145,7 +145,7 @@ void Npc::reset()
 	shopPlayerList.clear();
 	voiceList.clear();
 }
-
+ 
 void Npc::reload()
 {
 	reset();
@@ -153,7 +153,7 @@ void Npc::reload()
 	//Simulate that the creature is placed on the map again.
 	if(m_npcEventHandler)
 		m_npcEventHandler->onCreatureAppear(this);
-
+ 
 	if(walkTicks > 0)
 		addEventWalk();
 }
@@ -175,12 +175,12 @@ bool Npc::loadFromXml(const std::string& filename)
 		xmlFreeDoc(doc);
 		return false;
 	}
-
+ 
 	int32_t intValue;
 	std::string strValue, scriptfile;
 	if(readXMLString(root, "script", strValue))
 		scriptfile = strValue;
-
+ 
 	if(readXMLString(root, "name", strValue))
 		name = strValue;
 
@@ -190,7 +190,7 @@ bool Npc::loadFromXml(const std::string& filename)
 
 	if(readXMLString(root, "hidename", strValue) || readXMLString(root, "hideName", strValue))
 		hideName = booleanString(strValue);
-
+ 
 	if(readXMLString(root, "hidehealth", strValue) || readXMLString(root, "hideHealth", strValue))
 		hideHealth = booleanString(strValue);
 

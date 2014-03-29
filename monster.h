@@ -114,6 +114,9 @@ class Monster : public Creature
 		bool isTarget(Creature* creature);
 		bool getIdleStatus() const {return isIdle;}
 		bool isFleeing() const {return getHealth() <= mType->runAwayHealth;}
+    void doMonsterSetCombatValues(int32_t randomStats) {randomDamage = randomStats;}
+    void doMonsterSetLevel(int32_t newLevel) {monsterLevel = newLevel;}
+    virtual int32_t getMonsterLevel() const {return monsterLevel;}
 
 		virtual BlockType_t blockHit(Creature* attacker, CombatType_t combatType, int32_t& damage,
 			bool checkDefense = false, bool checkArmor = false, bool reflect = true);
@@ -132,6 +135,10 @@ class Monster : public Creature
 		uint32_t defenseTicks;
 		uint32_t yellTicks;
 		int32_t targetChangeCooldown;
+        int32_t randomDamage;
+        int32_t monsterLevel;
+		int32_t minLevel;
+		int32_t maxLevel;
 		bool resetTicks;
 		bool isIdle;
 		bool extraMeleeAttack;

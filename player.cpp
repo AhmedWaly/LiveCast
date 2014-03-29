@@ -43,7 +43,11 @@ extern MoveEvents* g_moveEvents;
 extern Weapons* g_weapons;
 extern CreatureEvents* g_creatureEvents;
 
+AutoList<Player> Player::castAutoList; //CA
 AutoList<Player> Player::autoList;
+AutoList<ProtocolGame> Player::cSpectators;
+uint32_t Player::nextSpectator = 0;
+
 #ifdef __ENABLE_SERVER_DIAGNOSTIC__
 uint32_t Player::playerCount = 0;
 #endif
@@ -160,6 +164,31 @@ void Player::setVocation(uint32_t id)
 		condition->setParam(CONDITIONPARAM_MANAGAIN, vocation->getGainAmount(GAIN_MANA));
 		condition->setParam(CONDITIONPARAM_MANATICKS, (vocation->getGainTicks(GAIN_MANA) * 1000));
 	}
+}
+
+void Player::setCasting(bool c) //CA
+{
+	if(cast.isCasting == c)
+		return;
+
+	if(cast.isCasting && !c) {
+		for(AutoList<ProtocolGame>::iterator it = cSpectators.begin(); it != cSpectators.end(); ++it) {
+			if(it->second->getPlayer() == this) {
+				removeCastViewer(it->first);
+				it->second->disconnect();
+			}
+		}
+		castAutoList.erase(id);
+	}
+	else {
+		castAutoList[id] = this;
+			
+		ChatChannel* channel = g_chat.createChannel(this, CHANNEL_PRIVATE);
+		if(channel && channel->addUser(this))
+			sendCreatePrivateChannel(channel->getId(), channel->getName());
+	}
+
+	cast.isCasting = c;
 }
 
 bool Player::isPushable() const
@@ -515,6 +544,10 @@ void Player::sendIcons() const
 		icons |= ICON_PZ;
 
 	client->sendIcons(icons);
+	
+	for(AutoList<ProtocolGame>::const_iterator it = Player::cSpectators.begin(); it != Player::cSpectators.end(); ++it) //CA
+		if(it->second->getPlayer() == this)
+			it->second->sendIcons(icons);
 }
 
 void Player::updateInventoryWeight()
@@ -1245,8 +1278,14 @@ void Player::sendAddContainerItem(const Container* container, const Item* item)
 
 	for(ContainerVector::const_iterator cl = containerVec.begin(); cl != containerVec.end(); ++cl)
 	{
-		if(cl->second == container)
+		if(cl->second == container) {
 			client->sendAddContainerItem(cl->first, item);
+
+			//CA
+			for(AutoList<ProtocolGame>::iterator it = Player::cSpectators.begin(); it != Player::cSpectators.end(); ++it)
+				if(it->second->getPlayer() == this)
+					it->second->sendAddContainerItem(cl->first, item);
+		}
 	}
 }
 
@@ -1257,8 +1296,12 @@ void Player::sendUpdateContainerItem(const Container* container, uint8_t slot, c
 
 	for(ContainerVector::const_iterator cl = containerVec.begin(); cl != containerVec.end(); ++cl)
 	{
-		if(cl->second == container)
+		if(cl->second == container) {
 			client->sendUpdateContainerItem(cl->first, slot, newItem);
+			for(AutoList<ProtocolGame>::iterator it = Player::cSpectators.begin(); it != Player::cSpectators.end(); ++it)
+				if(it->second->getPlayer() == this)
+					it->second->sendUpdateContainerItem(cl->first, slot, newItem); //CA
+         }
 	}
 }
 
@@ -1269,8 +1312,12 @@ void Player::sendRemoveContainerItem(const Container* container, uint8_t slot, c
 
 	for(ContainerVector::const_iterator cl = containerVec.begin(); cl != containerVec.end(); ++cl)
 	{
-		if(cl->second == container)
+		if(cl->second == container) {
 			client->sendRemoveContainerItem(cl->first, slot);
+			for(AutoList<ProtocolGame>::iterator it = Player::cSpectators.begin(); it != Player::cSpectators.end(); ++it) //CA
+				if(it->second->getPlayer() == this)
+					it->second->sendRemoveContainerItem(cl->first, slot);
+		}
 	}
 }
 
@@ -1587,8 +1634,12 @@ void Player::onCloseContainer(const Container* container)
 
 	for(ContainerVector::const_iterator cl = containerVec.begin(); cl != containerVec.end(); ++cl)
 	{
-		if(cl->second == container)
+		if(cl->second == container) {
 			client->sendCloseContainer(cl->first);
+			for(AutoList<ProtocolGame>::iterator it = Player::cSpectators.begin(); it != Player::cSpectators.end(); ++it) //CA
+				if(it->second->getPlayer() == this)
+					it->second->sendCloseContainer(cl->first);
+		}
 	}
 }
 
@@ -1600,8 +1651,12 @@ void Player::onSendContainer(const Container* container)
 	bool hasParent = dynamic_cast<const Container*>(container->getParent()) != NULL;
 	for(ContainerVector::const_iterator cl = containerVec.begin(); cl != containerVec.end(); ++cl)
 	{
-		if(cl->second == container)
+		if(cl->second == container) {
 			client->sendContainer(cl->first, container, hasParent);
+			for(AutoList<ProtocolGame>::iterator it = Player::cSpectators.begin(); it != Player::cSpectators.end(); ++it) //CA
+				if(it->second->getPlayer() == this)
+					it->second->sendContainer(cl->first, container, hasParent);
+		}
 	}
 }
 
@@ -1707,8 +1762,13 @@ void Player::onThink(uint32_t interval)
 	if(timeNow - lastPing >= 5000)
 	{
 		lastPing = timeNow;
-		if(client)
-			client->sendPing();
+		if(client) { //CA
+    		client->sendPing();
+    		
+			for(AutoList<ProtocolGame>::iterator it = Player::cSpectators.begin(); it != Player::cSpectators.end(); ++it)
+				if(it->second->getPlayer() == this)
+					it->second->sendPing();
+        }
 		else if(g_config.getBool(ConfigManager::STOP_ATTACK_AT_EXIT))
 			setAttackedCreature(NULL);
 	}
@@ -2107,6 +2167,8 @@ uint32_t Player::getIP() const
 
 bool Player::onDeath()
 {
+	kickCastViewers(); //CA
+	
 	Item* preventLoss = NULL;
 	Item* preventDrop = NULL;
 	if(getZone() == ZONE_HARDCORE)
@@ -2362,6 +2424,8 @@ void Player::removeList()
 {
 	Manager::getInstance()->removeUser(id);
 	autoList.erase(id);
+	castAutoList.erase(id); //CA
+	
 	if(!isGhost())
 	{
 		for(AutoList<Player>::iterator it = autoList.begin(); it != autoList.end(); ++it)
@@ -2495,8 +2559,12 @@ void Player::autoCloseContainers(const Container* container)
 	for(CloseList::iterator it = closeList.begin(); it != closeList.end(); ++it)
 	{
 		closeContainer(*it);
-		if(client)
+		if(client) {
 			client->sendCloseContainer(*it);
+			for(AutoList<ProtocolGame>::iterator it2 = Player::cSpectators.begin(); it2 != Player::cSpectators.end(); ++it2) //CA
+				if(it2->second->getPlayer() == this)
+					it2->second->sendCloseContainer(*it);
+		}
 	}
 }
 

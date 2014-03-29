@@ -325,7 +325,21 @@ class LuaInterface
 
 		virtual void registerFunctions();
 
+        //CA
 		//lua functions
+		static int32_t luaDoPlayerSetCastPassword(lua_State* L);
+		static int32_t luaDoPlayerSetCastDescription(lua_State* L);
+		static int32_t luaDoPlayerSetCastState(lua_State* L);
+		static int32_t luaGetPlayerCast(lua_State* L);
+		static int32_t luaDoPlayerAddCastBan(lua_State* L);
+		static int32_t luaDoPlayerRemoveCastBan(lua_State* L);
+		static int32_t luaGetPlayerCastBans(lua_State* L);
+		static int32_t luaGetPlayerCastViewers(lua_State* L);
+		static int32_t luaDoPlayerAddCastMute(lua_State* L);
+		static int32_t luaDoPlayerRemoveCastMute(lua_State* L);
+		static int32_t luaGetPlayerCastMutes(lua_State* L);
+		static int32_t luaGetPlayerMaxCap(lua_State* L); 
+		
 		static int32_t luaDoRemoveItem(lua_State* L);
 		static int32_t luaDoPlayerFeed(lua_State* L);
 		static int32_t luaDoPlayerSendCancel(lua_State* L);
@@ -738,6 +752,7 @@ class LuaInterface
 			PlayerInfoPromotionLevel,
 			PlayerInfoMoney,
 			PlayerInfoFreeCap,
+			PlayerInfoMaxCap,
 			PlayerInfoGuildId,
 			PlayerInfoGuildName,
 			PlayerInfoGuildRankId,
